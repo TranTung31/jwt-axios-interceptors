@@ -6,9 +6,9 @@ import CardActions from '@mui/material/CardActions'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Zoom from '@mui/material/Zoom'
-import axios from 'axios'
 import { useForm } from 'react-hook-form'
 import { toast } from 'react-toastify'
+import authorizedAxiosInstance from '~/utils/authorizedAxios'
 import { API_ROOT } from '~/utils/constants'
 import LogoIcon from '../assets/trungquandev-logo.png'
 
@@ -17,13 +17,9 @@ function Login() {
 
   const submitLogIn = async (data) => {
     console.log('submit login: ', data)
-    try {
-      const res = await axios.post(`${API_ROOT}/v1/users/login`, data)
-      console.log(res.data)
-      toast.success(res.data?.message)
-    } catch (error) {
-      toast.error(error.response?.data?.message || error?.message)
-    }
+    const res = await authorizedAxiosInstance.post(`${API_ROOT}/v1/users/login`, data)
+    console.log(res.data)
+    toast.success(res.data?.message)
   }
 
   return (
