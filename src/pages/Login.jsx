@@ -7,7 +7,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Zoom from '@mui/material/Zoom'
 import { useForm } from 'react-hook-form'
-import { toast } from 'react-toastify'
+import { useNavigate } from 'react-router-dom'
 import authorizedAxiosInstance from '~/utils/authorizedAxios'
 import { API_ROOT } from '~/utils/constants'
 import LogoIcon from '../assets/trungquandev-logo.png'
@@ -15,11 +15,22 @@ import LogoIcon from '../assets/trungquandev-logo.png'
 function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm()
 
+  const navigate = useNavigate()
+
   const submitLogIn = async (data) => {
-    console.log('submit login: ', data)
     const res = await authorizedAxiosInstance.post(`${API_ROOT}/v1/users/login`, data)
-    console.log(res.data)
-    toast.success(res.data?.message)
+
+    const userInfo = {
+      id: res.data?.id,
+      email: res.data?.email
+    }
+
+    // Lưu token và thông tin user vào local storage dùng JS thuần
+    localStorage.setItem('accessToken', res.data?.accessToken)
+    localStorage.setItem('refreshToken', res.data?.refreshToken)
+    localStorage.setItem('userInfo', JSON.stringify(userInfo))
+
+    navigate('/dashboard')
   }
 
   return (
@@ -29,7 +40,7 @@ function Login() {
       minHeight: '100vh',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      background: 'url("src/assets/trungquandev-bg-img.jpeg")',
+      // background: 'url("src/assets/trungquandev-bg-img.jpeg")',
       backgroundRepeat: 'no-repeat',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
