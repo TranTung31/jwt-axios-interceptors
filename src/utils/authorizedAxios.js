@@ -8,11 +8,19 @@ let authorizedAxiosInstance = axios.create()
 authorizedAxiosInstance.defaults.timeout = 1000 * 60 * 10
 
 // withCredentials: Cho phép axios tự động đính kèm và gửi cookie trong mỗi request lên BE (phục vụ trường hợp nếu chúng ta sử dụng Jwt tokens(access & refresh) theo cơ chế httpOnly Cookie)
-// authorizedAxiosInstance.defaults.withCredentials = true
+authorizedAxiosInstance.defaults.withCredentials = true
 
 // Add a request interceptor
 authorizedAxiosInstance.interceptors.request.use(function (config) {
   // Do something before request is sent
+  const accessToken = localStorage.getItem('accessToken')
+
+  // Cần thêm "Bearer" vì nên tuân thủ theo tiêu chuẩn OAuth 2.0 trong việc xác định loại token đang sử dụng
+  // Bearer là định nghĩa cho loại token dành cho việc xác thực và ủy quyền, có các loại token khác như Basic token, Digest token, OAuth token,...
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`
+  }
+
   return config
 }, function (error) {
   // Do something with request error
