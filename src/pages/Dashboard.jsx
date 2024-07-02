@@ -6,9 +6,13 @@ import Typography from '@mui/material/Typography'
 import { useEffect, useState } from 'react'
 import authorizedAxiosInstance from '~/utils/authorizedAxios'
 import { API_ROOT } from '~/utils/constants'
+import Button from '@mui/material/Button'
+import { useNavigate } from 'react-router-dom'
 
 function Dashboard() {
   const [user, setUser] = useState(null)
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -17,6 +21,16 @@ function Dashboard() {
     }
     fetchData()
   }, [])
+
+  const handleLogout = async () => {
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('userInfo')
+
+    await authorizedAxiosInstance.delete(`${API_ROOT}/v1/users/logout`)
+
+    navigate('/login')
+  }
 
   if (!user) {
     return (
@@ -48,6 +62,21 @@ function Dashboard() {
         <Typography variant="span" sx={{ fontWeight: 'bold', '&:hover': { color: '#fdba26' } }}>{user?.email}</Typography>
         &nbsp; đăng nhập thành công thì mới cho truy cập vào.
       </Alert>
+
+      <Button
+        type='button'
+        variant='contained'
+        color='info'
+        size='large'
+        sx={{
+          mt: 2,
+          maxWidth: '120px',
+          alignSelf: 'flex-end'
+        }}
+        onClick={handleLogout}
+      >
+        Log out
+      </Button>
 
       <Divider sx={{ my: 2 }} />
     </Box>

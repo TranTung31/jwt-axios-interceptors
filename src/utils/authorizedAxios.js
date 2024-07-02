@@ -30,12 +30,10 @@ authorizedAxiosInstance.interceptors.request.use(function (config) {
 // Add a response interceptor
 authorizedAxiosInstance.interceptors.response.use(function (response) {
   // Mọi mã http status code nằm trong khoảng 200 - 299 sẽ là thành công thì rơi vào đây
-  // Any status code that lie within the range of 2xx cause this function to trigger
   // Do something with response data
   return response
 }, function (error) {
   // Mọi mã http status code không nằm trong khoảng 200 - 299 sẽ là thất bại thì rơi vào đây
-  // Any status codes that falls outside the range of 2xx cause this function to trigger
   // Do something with response error
   if (error?.response?.status !== 410) {
     toast.error(error.response?.data?.message || error?.message)
