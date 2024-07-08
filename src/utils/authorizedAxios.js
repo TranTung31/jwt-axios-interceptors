@@ -28,6 +28,8 @@ authorizedAxiosInstance.interceptors.request.use(function (config) {
   return Promise.reject(error)
 })
 
+let refreshTokenPromise = null
+
 // Add a response interceptor
 authorizedAxiosInstance.interceptors.response.use(function (response) {
   // Mọi mã http status code nằm trong khoảng 200 - 299 sẽ là thành công thì rơi vào đây
@@ -44,13 +46,14 @@ authorizedAxiosInstance.interceptors.response.use(function (response) {
   // Nếu API trả về mã lỗi 410 thì gọi API refreshToken tạo accessToken mới
   // Đầu tiên lấy được các request API đang bị lỗi thông qua error.config
   const originalRequest = error.config
-  if (error?.response?.status === 410 && !originalRequest._retry) {
+  if (error?.response?.status === 410 && originalRequest) {
     // Gán thêm 1 giá trị _retry luôn = true trong khoảng thời gian chờ, để việc refreshToken này chỉ gọi 1 lần tại 1 thời điểm
-    originalRequest._retry = true
-    const refreshToken = localStorage.getItem('refreshToken')
-    if (refreshToken) {
+    // originalRequest._retry = true
+
+    if (!refreshTokenPromise) {
+      const refreshToken = localStorage.getItem('refreshToken')
       // Phải có return ở đây thì authorizedAxiosInstance(originalRequest) mới hoạt động
-      return refreshTokenAPI(refreshToken)
+      refreshTokenPromise = refreshTokenAPI(refreshToken)
         .then((res) => {
           // Trường hợp 1: Dùng localstorage -> Lấy và gán lại accessToken vào localstorage
           // eslint-disable-next-line no-unsafe-optional-chaining
@@ -59,9 +62,6 @@ authorizedAxiosInstance.interceptors.response.use(function (response) {
           authorizedAxiosInstance.defaults.headers.Authorization = `Bearer ${accessToken}`
 
           // Trường hợp 2: Dùng Http Only Cookies -> Đã gắn vào cookies khi gọi refreshTokenAPI
-
-          // return về axios instance kết hợp cái originalRequest để gọi lại những API ban đầu bị lỗi
-          return authorizedAxiosInstance(originalRequest)
         })
         .catch((_error) => {
           // Nếu nhận bất kỳ lỗi nào từ API refreshToken thì logout luôn
@@ -71,7 +71,15 @@ authorizedAxiosInstance.interceptors.response.use(function (response) {
 
           return Promise.reject(_error)
         })
+        .finally(() => {
+          refreshTokenPromise = null
+        })
     }
+
+    return refreshTokenPromise.then(() => {
+      // return về axios instance kết hợp cái originalRequest để gọi lại những API ban đầu bị lỗi
+      return authorizedAxiosInstance(originalRequest)
+    })
   }
 
   if (error?.response?.status !== 410) {
