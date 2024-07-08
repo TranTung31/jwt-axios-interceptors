@@ -1,13 +1,14 @@
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
 import Divider from '@mui/material/Divider'
 import Typography from '@mui/material/Typography'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { handleLogoutAPI } from '~/apis/index'
 import authorizedAxiosInstance from '~/utils/authorizedAxios'
 import { API_ROOT } from '~/utils/constants'
-import Button from '@mui/material/Button'
-import { useNavigate } from 'react-router-dom'
 
 function Dashboard() {
   const [user, setUser] = useState(null)
@@ -23,12 +24,7 @@ function Dashboard() {
   }, [])
 
   const handleLogout = async () => {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('userInfo')
-
-    await authorizedAxiosInstance.delete(`${API_ROOT}/v1/users/logout`)
-
+    await handleLogoutAPI()
     navigate('/login')
   }
 

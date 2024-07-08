@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { handleLogoutAPI, refreshTokenAPI } from '~/apis/index'
 
 // Khởi tạo 1 đối tượng Axios (authorizedAxiosInstance) mục đích để custom và cấu hình chung cho dự án
 let authorizedAxiosInstance = axios.create()
@@ -30,11 +31,49 @@ authorizedAxiosInstance.interceptors.request.use(function (config) {
 // Add a response interceptor
 authorizedAxiosInstance.interceptors.response.use(function (response) {
   // Mọi mã http status code nằm trong khoảng 200 - 299 sẽ là thành công thì rơi vào đây
-  // Do something with response data
   return response
-}, function (error) {
+}, (error) => {
   // Mọi mã http status code không nằm trong khoảng 200 - 299 sẽ là thất bại thì rơi vào đây
-  // Do something with response error
+  // Nếu API trả về mã lỗi 401 thì cho người dùng logout luôn
+  if (error?.response?.status === 401) {
+    handleLogoutAPI().then(() => {
+      location.href = '/login'
+    })
+  }
+
+  // Nếu API trả về mã lỗi 410 thì gọi API refreshToken tạo accessToken mới
+  // Đầu tiên lấy được các request API đang bị lỗi thông qua error.config
+  const originalRequest = error.config
+  if (error?.response?.status === 410 && !originalRequest._retry) {
+    // Gán thêm 1 giá trị _retry luôn = true trong khoảng thời gian chờ, để việc refreshToken này chỉ gọi 1 lần tại 1 thời điểm
+    originalRequest._retry = true
+    const refreshToken = localStorage.getItem('refreshToken')
+    if (refreshToken) {
+      // Phải có return ở đây thì authorizedAxiosInstance(originalRequest) mới hoạt động
+      return refreshTokenAPI(refreshToken)
+        .then((res) => {
+          // Trường hợp 1: Dùng localstorage -> Lấy và gán lại accessToken vào localstorage
+          // eslint-disable-next-line no-unsafe-optional-chaining
+          const { accessToken } = res?.data
+          localStorage.setItem('accessToken', accessToken)
+          authorizedAxiosInstance.defaults.headers.Authorization = `Bearer ${accessToken}`
+
+          // Trường hợp 2: Dùng Http Only Cookies -> Đã gắn vào cookies khi gọi refreshTokenAPI
+
+          // return về axios instance kết hợp cái originalRequest để gọi lại những API ban đầu bị lỗi
+          return authorizedAxiosInstance(originalRequest)
+        })
+        .catch((_error) => {
+          // Nếu nhận bất kỳ lỗi nào từ API refreshToken thì logout luôn
+          handleLogoutAPI().then(() => {
+            location.href = '/login'
+          })
+
+          return Promise.reject(_error)
+        })
+    }
+  }
+
   if (error?.response?.status !== 410) {
     toast.error(error.response?.data?.message || error?.message)
   }
